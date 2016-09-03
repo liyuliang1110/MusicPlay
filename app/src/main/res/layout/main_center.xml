@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    android:orientation="vertical">
+
+
+    <ListView
+        android:id="@+id/tuijian_listview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/center_list">
+
+    </ListView>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="312dp"
+        android:id="@+id/center_list"
+        android:layout_marginTop="11dp"
+        android:orientation="vertical"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <RelativeLayout
+            android:id="@+id/local_music"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imageView"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/localmusic" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_marginLeft="50dp"
+                android:layout_marginStart="30dp"
+                android:layout_toEndOf="@+id/imageView"
+                android:layout_toRightOf="@+id/imageView"
+                android:gravity="center"
+                android:text="本地音乐" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/recently_paly"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/local_music"
+            android:layout_marginTop="28dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="fill_parent"
+                android:layout_height="2dp"
+                android:background="#ffffff" />
+
+            <ImageView
+                android:id="@+id/imageView2"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/recentlypaly" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_marginLeft="50dp"
+                android:layout_marginStart="30dp"
+                android:layout_toEndOf="@+id/imageView2"
+                android:layout_toRightOf="@+id/imageView2"
+                android:gravity="center"
+                android:text="最近播放" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/my_collection"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="fill_parent"
+                android:layout_height="2dp"
+                android:background="#ffffff" />
+
+            <ImageView
+                android:id="@+id/collection"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/collection" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+
+                android:layout_alignParentTop="true"
+                android:layout_marginLeft="50dp"
+                android:layout_marginStart="30dp"
+                android:layout_toEndOf="@+id/collection"
+                android:layout_toRightOf="@+id/collection"
+                android:gravity="center"
+                android:text="我的收藏" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/my_friend"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/my_collection"
+            android:layout_marginTop="33dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="fill_parent"
+                android:layout_height="2dp"
+                android:background="#ffffff" />
+
+            <ImageView
+                android:id="@+id/user_myfriend"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/friend" />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="50dp"
+                android:layout_marginStart="30dp"
+                android:gravity="center"
+                android:text="我的朋友"
+                android:layout_alignParentTop="true"
+                android:layout_toRightOf="@+id/user_myfriend"
+                android:layout_toEndOf="@+id/user_myfriend" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/guess_youlike"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true">
+
+            <ImageView
+                android:layout_width="fill_parent"
+                android:layout_height="2dp"
+                android:background="#ffffff"
+                android:id="@+id/imageView3" />
+
+            <ImageView
+                android:id="@+id/guess_like"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:src="@drawable/like" />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="猜你喜欢"
+                android:layout_alignParentTop="true"
+                android:layout_toRightOf="@+id/guess_like"
+                android:layout_toEndOf="@+id/guess_like"
+                android:layout_marginLeft="50dp"
+                android:layout_marginStart="30dp" />
+           <ImageView
+               android:layout_width="50dp"
+               android:layout_height="50dp"
+               android:id="@+id/open_list"
+               android:src="@drawable/open"
+               android:layout_below="@+id/imageView3"
+               android:layout_alignParentRight="true"
+               android:layout_alignParentEnd="true" />
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+
+</RelativeLayout>

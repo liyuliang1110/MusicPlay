@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/my_music"
+            android:icon="@drawable/list"
+            android:title="我的音乐" />
+        <item
+            android:id="@+id/my_download"
+            android:icon="@drawable/download"
+            android:title="我的下载" />
+        <item
+            android:id="@+id/my_musicPost"
+            android:icon="@drawable/musicpost"
+            android:title="我的歌单" />
+        <item
+            android:id="@+id/timer_shutdown"
+            android:icon="@drawable/timer"
+            android:title="定时关机" />
+
+    </group>
+
+    <item android:title="">
+        <menu>
+            <item
+                android:id="@+id/evening_model"
+                android:icon="@drawable/eveningmodel"
+                android:title="夜间模式" />
+            <item
+                android:id="@+id/exit"
+                android:icon="@drawable/exit"
+                android:title="退出" />
+        </menu>
+    </item>
+
+</menu>

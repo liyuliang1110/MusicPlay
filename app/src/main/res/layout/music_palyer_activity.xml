@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/music_player_background"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/music_play_songName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/song_name"
+        android:textColor="@android:color/primary_text_dark"
+        android:textSize="25sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/music_play_musicName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:text="@string/artist"
+        android:textColor="@android:color/primary_text_dark"
+        android:textSize="16sp" />
+
+    <com.example.blue.musicplay.activity.CircularMusicProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="30dp"
+        android:src="@mipmap/bottom_music"
+        app:border_color="#00796B"
+        app:border_width="2dp"
+        app:centercircle_diammterer=".97"
+        app:progress_color="#80CBC4"
+        app:progress_startAngle="40" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="20dp">
+        <include layout="@layout/music_player_bottom"/>
+    </LinearLayout>
+</LinearLayout>
