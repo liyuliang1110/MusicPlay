@@ -1,6 +1,8 @@
 package com.example.blue.musicplay.basic;
 
-public class Mp3Info {
+import java.io.Serializable;
+
+public class Mp3Info implements Serializable{
     private String title;
     private String singer;
     private String album;

@@ -82,13 +82,18 @@ public class MusicPlayerActivity extends AppCompatActivity {
         registerReceiver(broadcastReceiver, filter);//注册接收广播
         handlerClick();
         player = (MediaPlayer) ObjectPool.getInstance().getObject("MediaPlayer");
-        ObjectPool.getInstance().creatObject(NOW_musicUri_String, Now_Mp3Info.getUrl());
+        ObjectPool.getInstance().creatObject(NOW_musicUri_String, Now_Mp3Info.getUrl()); //更新当前音乐uri，通知Service
         ObjectPool.getInstance().creatObject("uiHandler", uiHandler);
-        Intent intent = new Intent();
-        intent.setAction(MusicService.ACTION_ServiceConnection);
-        intent.putExtra(RECEIOVERACTION, "play");
-        sendBroadcast(intent);
-        Log.d(TAG, "正在播放" + intent.getStringExtra("Music_Name"));
+        boolean flag = getIntent().getBooleanExtra("flag",false);
+       if (flag) {
+            player.getDuration();
+       }else {
+           Intent intent = new Intent();
+           intent.setAction(MusicService.ACTION_ServiceConnection);
+           intent.putExtra(RECEIOVERACTION, "play");
+           sendBroadcast(intent);
+           Log.d(TAG, "正在播放" + intent.getStringExtra("Music_Name"));
+       }
     }
     private void initMusicPlayerLayout() {
         Now_Mp3Info = (Mp3Info) ObjectPool.getInstance().getObject(NOW_Mp3Info_String);

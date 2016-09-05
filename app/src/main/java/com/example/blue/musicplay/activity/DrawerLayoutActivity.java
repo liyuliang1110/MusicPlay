@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
@@ -26,10 +27,19 @@ import com.example.blue.musicplay.R;
 import com.example.blue.musicplay.Service.ControlServic;
 import com.example.blue.musicplay.Service.MusicService;
 import com.example.blue.musicplay.basic.AcitivtyList;
+import com.example.blue.musicplay.basic.Mp3Info;
+import com.example.blue.musicplay.engin.MusicScan;
 import com.example.blue.musicplay.pool.ObjectPool;
 import com.lidroid.xutils.view.annotation.ViewInject;
 import com.lidroid.xutils.view.annotation.event.OnClick;
 
+import org.apache.commons.codec.binary.Base64;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,8 +82,58 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         AcitivtyList.getSingInstance().getList().add(this);
         recommend.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1, getData()));
         ObjectPool.getInstance().creatObject(THIS_CONTEXT_STRING,this); //存储Context
+        loadMusicInfo();
     }
-
+    private void loadMusicInfo() {
+        SharedPreferences preferences = getSharedPreferences("data",Context.MODE_PRIVATE);
+        String musicList_string = preferences.getString("music_list",null);
+        if (musicList_string==null||musicList_string=="") {
+            List<Mp3Info> listMusic = MusicScan.getMusicData(getApplicationContext()); //获取音乐列表
+            saveMusicList(listMusic);
+            Log.d(TAG, "loadMusicInfo: 储存对象成功");
+            ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);
+        }else {
+            List<Mp3Info> list = getMusicList(musicList_string);
+            if (list!=null) {
+                ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String, list);
+            }else {
+                Toast.makeText(this,"读取音乐错误，请确认你的手机中是否有音乐",Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    /*
+        利用Base64编码存储对象
+     */
+    private void saveMusicList(List<Mp3Info> list) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
+            objectOutputStream.writeObject(list);
+            String base64 = new String(Base64.encodeBase64(outputStream.toByteArray()));
+            SharedPreferences.Editor editor = getSharedPreferences("data",Context.MODE_PRIVATE).edit();
+            editor.putString("music_list",base64);
+           editor.commit();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    /*
+    * 将获取到的base64编码 读取封装成对象
+    * */
+    private List<Mp3Info> getMusicList(String base64) {
+        List<Mp3Info> list = null;
+        byte[] byteBase64 = Base64.decodeBase64(base64.getBytes());
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteBase64);
+        try {
+            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+            list = (List<Mp3Info>) objectInputStream.readObject();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);

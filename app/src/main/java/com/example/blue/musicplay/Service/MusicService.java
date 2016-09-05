@@ -8,17 +8,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
-import android.widget.Toast;
 
 import com.example.blue.musicplay.R;
-import com.example.blue.musicplay.activity.DrawerLayoutActivity;
 import com.example.blue.musicplay.activity.LocalMusicListActivity;
 import com.example.blue.musicplay.activity.MusicPlayerActivity;
 import com.example.blue.musicplay.basic.Mp3Info;
@@ -29,8 +31,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import static com.example.blue.musicplay.R.drawable.icon_music_play;
 
 
 /**
@@ -44,7 +44,6 @@ public class MusicService extends Service {
     private static final int btn_next = 2;
     private static final int btn_previous = 3;
     private static final String INTENT_BTNID = "INTENT_BTNID";
-
     /*默认为单曲循环*/
     private MusicPlayerType playerType = MusicPlayerType.cycle;
     private MediaPlayer player = new MediaPlayer();
@@ -57,12 +56,13 @@ public class MusicService extends Service {
     /*前台通知服务*/
     private NotificationCompat.Builder builder;
     /*Notification的自定义布局*/
-    private RemoteViews remoteViews  = null;
+    private RemoteViews remoteViews = null;
     private Timer timer = null;
     private String now_musicUri;
     private int song_time = 0;
     private int current = 0;
-    private NotificationManager manager;
+    private Notification notification;
+    private NotificationManager notificationManager = null;
 
     /*音乐播放类型*/
     private enum MusicPlayerType {
@@ -81,11 +81,23 @@ public class MusicService extends Service {
 
     @Override
     public void onCreate() {
+        init();
+        buildNotification();
+    }
+
+    private void init() {
         list = (List<Mp3Info>) ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);//接收到对象池中的ListMusicInfo对象
         receiver = new ServiceConnectionReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_ServiceConnection);
         registerReceiver(receiver, filter);//注册接收器
+        player.reset();
+        try {
+            player.setDataSource(list.get(0).getUrl());//设置文件路径
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_musicUri_String, list.get(0).getUrl());
         player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
@@ -96,42 +108,63 @@ public class MusicService extends Service {
                 }
             }
         });
-        buildNotification();
     }
 
     private void buildNotification() {
-        remoteViews = new RemoteViews(getPackageName(), R.layout.music_service_notification);
         android.support.v4.app.NotificationCompat.Builder builder = new android.support.v4.app.NotificationCompat.Builder(this);
-        Intent intent = new Intent();
-        intent.setAction(ACTION_ServiceConnection);
-        intent.putExtra(INTENT_BTNID,btn_play);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this,1,intent,PendingIntent.FLAG_UPDATE_CURRENT);
-        remoteViews.setOnClickPendingIntent(R.id.music_notification_play_play,pendingIntent);
-        builder.setOngoing(false);
-        builder.setAutoCancel(false);
+        remoteViews = new RemoteViews(getPackageName(), R.layout.music_service_notification);
+        remoteViews.setTextViewText(R.id.music_notification_musicname, list.get(0).getName());
+        Bitmap bitmap = BitmapFactory.decodeFile(list.get(0).getImagePath());
+        if (bitmap != null)
+            remoteViews.setImageViewBitmap(R.id.music_notification_musicImage, bitmap);
+        setNotificationListener();
         builder.setContent(remoteViews);
         builder.setSmallIcon(R.drawable.my_head);
-        Notification notification = builder.build();
+        notification = builder.build();
         notification.defaults = Notification.DEFAULT_SOUND;
         notification.flags = Notification.FLAG_NO_CLEAR;
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(0, notification);
     }
 
-    private void updateNotification(String action) {
-        if (action.equals("flush_btn_play")) {
-            remoteViews.setImageViewResource(R.id.music_notification_play_play,R.drawable.icon_music_play);
-        }else if (action.equals("flush_btn_pause")) {
-            remoteViews.setImageViewResource(R.id.music_notification_play_play,R.drawable.icon_music_pause);
-        }else if (action.equals("flush_text_musicname")) {
+    private void setNotificationListener() {
+        Intent intent = new Intent(ACTION_ServiceConnection);
+        intent.putExtra(INTENT_BTNID, btn_play);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.music_notification_play_play, pendingIntent);
+        Intent intent1 = new Intent(ACTION_ServiceConnection);
+        intent1.putExtra(INTENT_BTNID, btn_next);
+        PendingIntent pendingIntent1 = PendingIntent.getBroadcast(this, 2, intent1, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.music_notification_play_next, pendingIntent1);
+        Intent intent2 = new Intent(ACTION_ServiceConnection);
+        intent2.putExtra(INTENT_BTNID, btn_previous);
+        PendingIntent pendingIntent2 = PendingIntent.getBroadcast(this, 3, intent2, PendingIntent.FLAG_UPDATE_CURRENT);
+        remoteViews.setOnClickPendingIntent(R.id.music_notification_play_previous, pendingIntent2);
+    }
+
+    private void updateNotification( ) {
+        Log.d(TAG, "updateNotification: 更新Notification");
+        remoteViews = notification.contentView;
+        Mp3Info info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
+        remoteViews.setTextViewText(R.id.music_notification_musicname, info.getName());
+        Bitmap bitmap = BitmapFactory.decodeFile(info.getImagePath());
+        if (bitmap != null)
+            remoteViews.setImageViewBitmap(R.id.music_notification_musicImage, bitmap);
+        if (player.isPlaying()) {
+            Resources resources = getResources();
+            bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_music_pause);
+            remoteViews.setImageViewBitmap(R.id.music_notification_play_play, bitmap);
+        } else {
+            remoteViews.setImageViewResource(R.id.music_notification_play_play, R.drawable.icon_music_play);
 
         }
+        notificationManager.notify(0, notification);
     }
 
     public void music_play(String uri) {
         /*更新当前播放uri*/
         ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_musicUri_String, uri);
-        Mp3Info info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
+
         uiHandler = (Handler) ObjectPool.getInstance().getObject("uiHandler");
         Log.d(TAG, "开始播放");
         current = 0;
@@ -141,12 +174,16 @@ public class MusicService extends Service {
             player.setDataSource(uri);//设置文件路径
             player.prepare();//准备
             player.start();
-            song_time = player.getDuration() / 100;
-            timer = new Timer();
-            timer.schedule(new SetprogressBarThread(), 1000, song_time);
+            if (uiHandler != null) {
+                song_time = player.getDuration() / 100;
+                timer = new Timer();
+                timer.schedule(new SetprogressBarThread(), 1000, song_time);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+           /*更新Notification*/
+        updateNotification();
     }
 
     private void music_pause() {
@@ -155,7 +192,7 @@ public class MusicService extends Service {
             player.stop();
         }
         updataUI(MusicPlayerActivity.ACTION_BTNUPDATE_PAUSE);
-        updateNotification("flush_btn_pause");
+        updateNotification();
     }
 
     private void music_next() {
@@ -174,9 +211,9 @@ public class MusicService extends Service {
     private void music_previous() {
         int index = Utils.getSingInstance().getMusicPostion(now_musicUri) - 1;
         list = (List<Mp3Info>) ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);
-        if (index == 0)
+        if (index == -1)
             index = list.size() - 1;
-        Log.d(TAG, "music_next: 即将播放 " + list);
+        Log.d(TAG, "music_next: 即将播放 " + list.get(index).getName());
         if (list != null) {
             ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_Mp3Info_String, list.get(index));
             updataUI(MusicPlayerActivity.ACTION_FLUSH_PROGRESSBAR);
@@ -193,7 +230,7 @@ public class MusicService extends Service {
             e.printStackTrace();
         }
         updataUI(MusicPlayerActivity.ACTION_BTUPNDATA_PLAY);
-        updateNotification("flush_btn_play");
+        updateNotification();
     }
 
     private void updataUI(String action) {
@@ -227,18 +264,27 @@ public class MusicService extends Service {
     }
 
     private class ServiceConnectionReceiver extends BroadcastReceiver {
-
         @Override
         public void onReceive(Context context, Intent intent) {
             int btn_id = intent.getIntExtra(INTENT_BTNID, 0);
-            Log.d(TAG, "onReceive:"+btn_id);
-            if (btn_id!=0) {
+            Log.d(TAG, "onReceive:" + btn_id);
+            if (btn_id != 0) {
                 switch (btn_id) {
                     case btn_play:
-                        music_pause();
+                        Log.d(TAG, "onReceive: notification 点击了暂停");
+                        if (player.isPlaying())
+                            music_pause();
+                        else
+                            music_continue();
+                        break;
+                    case btn_next:
+                        music_next();
+                        break;
+                    case btn_previous:
+                        music_previous();
                         break;
                 }
-            }else {
+            } else {
                 String musicControl = intent.getStringExtra(MusicPlayerActivity.RECEIOVERACTION);
                 now_musicUri = (String) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_musicUri_String);
                 Log.d(TAG, musicControl + " ");  //UI操作

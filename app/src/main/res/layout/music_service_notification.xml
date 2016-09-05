@@ -5,6 +5,7 @@
     android:orientation="horizontal">
     <ImageView
         android:layout_width="60dp"
+        android:id="@+id/music_notification_musicImage"
         android:layout_height="60dp"
         android:src="@drawable/my_head"
         />
@@ -31,30 +32,30 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true">
-        <ImageButton
+        <ImageView
             android:id="@+id/music_notification_play_play"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:background="@drawable/icon_music_pause" />
+            android:src="@drawable/icon_music_play" />
 
-        <ImageButton
+        <ImageView
             android:id="@+id/music_notification_play_previous"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_marginLeft="45dp"
             android:layout_marginStart="45dp"
-            android:background="@drawable/icon_music_previous" />
+            android:src="@drawable/icon_music_previous" />
 
-        <ImageButton
+        <ImageView
             android:id="@+id/music_notification_play_next"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="45dp"
             android:layout_marginRight="45dp"
-            android:background="@drawable/icon_music_next"
+            android:src="@drawable/icon_music_next"
             android:layout_alignParentRight="true" />
 
         </RelativeLayout>

@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Log;
 
-import com.example.blue.musicplay.activity.MusicPlayerActivity;
 import com.example.blue.musicplay.basic.Mp3Info;
 
 import java.util.ArrayList;
