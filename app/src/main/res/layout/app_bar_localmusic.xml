@@ -42,7 +42,7 @@
         android:layout_marginStart="66dp"
         android:padding="13dp"
         android:text="@string/local_music"
-        android:textColor="#FFFFFF"
+        android:textColor="#000000"
         android:textSize="20sp" />
 
 

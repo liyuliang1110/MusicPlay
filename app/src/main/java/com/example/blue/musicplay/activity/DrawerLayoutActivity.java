@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -26,8 +27,10 @@ import android.widget.Toast;
 import com.example.blue.musicplay.R;
 import com.example.blue.musicplay.Service.ControlServic;
 import com.example.blue.musicplay.Service.MusicService;
+import com.example.blue.musicplay.adapter.MainMenuAdapter;
 import com.example.blue.musicplay.basic.AcitivtyList;
 import com.example.blue.musicplay.basic.Mp3Info;
+import com.example.blue.musicplay.basic.Utils;
 import com.example.blue.musicplay.engin.MusicScan;
 import com.example.blue.musicplay.pool.ObjectPool;
 import com.lidroid.xutils.view.annotation.ViewInject;
@@ -52,10 +55,12 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
     public static final String THIS_CONTEXT_STRING = "DrawerLaoutActivity_Context";
     @ViewInject(R.id.tuijian_listview)
     private ListView recommend;
-    @ViewInject(R.id.open_list)
-    private ImageView image_open;
-    @ViewInject(R.id.local_music)
-    private RelativeLayout local_music;
+    @ViewInject(R.id.main_menu_list)
+    private ListView main_menu_list ;
+//    @ViewInject(R.id.open_list)
+//    private ImageView image_open;
+//    @ViewInject(R.id.local_music)
+//    private RelativeLayout local_music;
     @ViewInject(R.id.nav_view)
     private NavigationView navigationView;
     @ViewInject(R.id.drawer_layout)
@@ -64,6 +69,7 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
     private Toolbar toolbar;
     /*调用Service里面的方法*/
     private ControlServic controlServic;
+    private List<Mp3Info> listMusic = null;
     private int count = 0;
 
     @Override
@@ -72,7 +78,6 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         setContentView(R.layout.activity_main);
         com.lidroid.xutils.ViewUtils.inject(this);
         init();
-        initMusicService();
     }
 
     public void init() {
@@ -82,58 +87,36 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         AcitivtyList.getSingInstance().getList().add(this);
         recommend.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1, getData()));
         ObjectPool.getInstance().creatObject(THIS_CONTEXT_STRING,this); //存储Context
+        MainMenuAdapter adapter = new MainMenuAdapter(this,recommend);
+        main_menu_list.setAdapter(adapter);
+        main_menu_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i == 0)
+                    startActivity(new Intent(DrawerLayoutActivity.this, LocalMusicListActivity.class));
+
+            }
+        });
         loadMusicInfo();
     }
     private void loadMusicInfo() {
         SharedPreferences preferences = getSharedPreferences("data",Context.MODE_PRIVATE);
         String musicList_string = preferences.getString("music_list",null);
         if (musicList_string==null||musicList_string=="") {
-            List<Mp3Info> listMusic = MusicScan.getMusicData(getApplicationContext()); //获取音乐列表
-            saveMusicList(listMusic);
+            listMusic = MusicScan.getMusicData(getApplicationContext()); //获取音乐列表
+            Utils.getSingInstance().saveMusicList(listMusic,this);
             Log.d(TAG, "loadMusicInfo: 储存对象成功");
-            ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);
+            ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String,listMusic);
         }else {
-            List<Mp3Info> list = getMusicList(musicList_string);
-            if (list!=null) {
-                ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String, list);
+            listMusic = Utils.getSingInstance().getMusicList(musicList_string);
+            if (listMusic!=null) {
+                ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String, listMusic);
             }else {
                 Toast.makeText(this,"读取音乐错误，请确认你的手机中是否有音乐",Toast.LENGTH_SHORT).show();
             }
         }
     }
-    /*
-        利用Base64编码存储对象
-     */
-    private void saveMusicList(List<Mp3Info> list) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
-            objectOutputStream.writeObject(list);
-            String base64 = new String(Base64.encodeBase64(outputStream.toByteArray()));
-            SharedPreferences.Editor editor = getSharedPreferences("data",Context.MODE_PRIVATE).edit();
-            editor.putString("music_list",base64);
-           editor.commit();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    /*
-    * 将获取到的base64编码 读取封装成对象
-    * */
-    private List<Mp3Info> getMusicList(String base64) {
-        List<Mp3Info> list = null;
-        byte[] byteBase64 = Base64.decodeBase64(base64.getBytes());
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteBase64);
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-            list = (List<Mp3Info>) objectInputStream.readObject();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
+
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -170,27 +153,6 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         navigationView.setNavigationItemSelectedListener(DrawerLayoutActivity.this);
     }
 
-    @OnClick({R.id.open_list, R.id.local_music})
-    private void onclick(View view) {
-
-        switch (view.getId()) {
-            case R.id.open_list:
-                if ((count & 1) == 0) {
-                    image_open.setImageResource(R.drawable.close);
-                    recommend.setVisibility(View.INVISIBLE);
-                } else {
-                    image_open.setImageResource(R.drawable.open);
-                    recommend.setVisibility(View.VISIBLE);
-                }
-                count++;
-                break;
-            case R.id.local_music:
-                Log.d(TAG, "本地音乐");
-                startActivity(new Intent(DrawerLayoutActivity.this, LocalMusicListActivity.class));
-                break;
-        }
-    }
-
     private List<String> getData() {
         List<String> data = new ArrayList<String>();
         data.add("测试数据1");
@@ -203,14 +165,7 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         return data;
     }
 
-    private void initMusicService() {
-        Log.d(TAG, "正在初始化MusicServic");
-        MediaPlayer player = (MediaPlayer) ObjectPool.getInstance().getObject("MediaPlayer");
-        if (!isServiceWork(this, "com.example.blue.musicplay.Service.MusicService") || player != null) {
-            Intent intent = new Intent(DrawerLayoutActivity.this, MusicService.class);
-            startService(intent);
-        }
-    }
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {

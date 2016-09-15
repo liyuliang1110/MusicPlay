@@ -7,7 +7,7 @@
         android:layout_width="60dp"
         android:id="@+id/music_notification_musicImage"
         android:layout_height="60dp"
-        android:src="@drawable/my_head"
+        android:src="@drawable/icon_default_singer"
         />
     <RelativeLayout
         android:layout_width="match_parent"
@@ -23,6 +23,7 @@
             android:gravity="center"
             android:id="@+id/music_notification_musicname"
             android:text="思念是一种病"
+            android:textColor="@color/nightYa"
             android:layout_alignParentTop="true" />
 
         <RelativeLayout
@@ -38,7 +39,7 @@
             android:layout_height="30dp"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:src="@drawable/icon_music_play" />
+            android:src="@drawable/icon_music_pause" />
 
         <ImageView
             android:id="@+id/music_notification_play_previous"

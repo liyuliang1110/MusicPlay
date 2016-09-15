@@ -6,7 +6,9 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
+        android:id="@+id/control_music"
         android:layout_height="wrap_content"
+        android:gravity="bottom"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true">
@@ -38,4 +40,13 @@
             android:background="@drawable/icon_music_next"
             android:layout_alignParentRight="true" />
     </RelativeLayout>
+
+    <SeekBar
+        android:id="@+id/playSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="34dp"
+        android:layout_above="@+id/control_music"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 </RelativeLayout>

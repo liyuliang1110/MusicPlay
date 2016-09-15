@@ -11,14 +11,17 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.net.Uri;
+
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
+import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.example.blue.musicplay.R;
 import com.example.blue.musicplay.activity.LocalMusicListActivity;
@@ -32,11 +35,10 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
 /**
  * Created by blue on 2016/8/10.
  */
-public class MusicService extends Service {
+public class MusicService extends Service implements ControlServic {
     /*与Service通信的action*/
     public static final String ACTION_ServiceConnection = "action.ServiceConnection";
     private static final String TAG = "MusicPlayerServic--->";
@@ -57,16 +59,23 @@ public class MusicService extends Service {
     private NotificationCompat.Builder builder;
     /*Notification的自定义布局*/
     private RemoteViews remoteViews = null;
+    /*当前音乐播放界面*/
+    private int currentPosition = 0;
+    private Mp3Info now_Info = null;
     private Timer timer = null;
-    private String now_musicUri;
-    private int song_time = 0;
-    private int current = 0;
+    private TimerTask mTimerTask = null;
     private Notification notification;
     private NotificationManager notificationManager = null;
+    private SeekBar seekBar = null;
+    private boolean flag = false;
 
     /*音乐播放类型*/
     private enum MusicPlayerType {
         cycle, order, random;
+    }
+
+    private enum MusicControl {
+        music_continue, music_play;
     }
 
     @Override
@@ -86,28 +95,18 @@ public class MusicService extends Service {
     }
 
     private void init() {
+        now_Info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
         list = (List<Mp3Info>) ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);//接收到对象池中的ListMusicInfo对象
+        seekBar = (SeekBar) ObjectPool.getInstance().getObject(MusicPlayerActivity.SeekBar_String);
         receiver = new ServiceConnectionReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_ServiceConnection);
         registerReceiver(receiver, filter);//注册接收器
-        player.reset();
-        try {
-            player.setDataSource(list.get(0).getUrl());//设置文件路径
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (player == null || player.equals(null)) {
+            Log.d(TAG, "init: 实例化MediaPlayer");
+            player = new MediaPlayer();
         }
-        ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_musicUri_String, list.get(0).getUrl());
-        player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mediaPlayer) {
-                if (playerType == MusicPlayerType.cycle) {
-                    updataUI(MusicPlayerActivity.ACTION_FLUSH_PROGRESSBAR);
-                    Log.d(TAG, "循环");//发送循环广播，通知刷新UI
-                    music_play(now_musicUri);
-                }
-            }
-        });
+        ObjectPool.getInstance().creatObject("MediaPlayer", player);
     }
 
     private void buildNotification() {
@@ -119,12 +118,14 @@ public class MusicService extends Service {
             remoteViews.setImageViewBitmap(R.id.music_notification_musicImage, bitmap);
         setNotificationListener();
         builder.setContent(remoteViews);
-        builder.setSmallIcon(R.drawable.my_head);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
         notification = builder.build();
-        notification.defaults = Notification.DEFAULT_SOUND;
         notification.flags = Notification.FLAG_NO_CLEAR;
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(0, notification);
+        Log.d(TAG, "buildNotification: Notification构建完成");
+        music_play(now_Info.getUrl(), MusicControl.music_play);
+        updateNotification();
     }
 
     private void setNotificationListener() {
@@ -142,95 +143,159 @@ public class MusicService extends Service {
         remoteViews.setOnClickPendingIntent(R.id.music_notification_play_previous, pendingIntent2);
     }
 
-    private void updateNotification( ) {
+    private void updateNotification() {
         Log.d(TAG, "updateNotification: 更新Notification");
         remoteViews = notification.contentView;
-        Mp3Info info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
-        remoteViews.setTextViewText(R.id.music_notification_musicname, info.getName());
-        Bitmap bitmap = BitmapFactory.decodeFile(info.getImagePath());
+        now_Info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
+        remoteViews.setTextViewText(R.id.music_notification_musicname, now_Info.getName());
+        Bitmap bitmap = BitmapFactory.decodeFile(now_Info.getImagePath());
+        if (now_Info.getImagePath() == null) {
+            Resources resources = getResources();
+            bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_default_singer);
+        }
         if (bitmap != null)
             remoteViews.setImageViewBitmap(R.id.music_notification_musicImage, bitmap);
-        if (player.isPlaying()) {
-            Resources resources = getResources();
-            bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_music_pause);
-            remoteViews.setImageViewBitmap(R.id.music_notification_play_play, bitmap);
-        } else {
-            remoteViews.setImageViewResource(R.id.music_notification_play_play, R.drawable.icon_music_play);
-
+        player = (MediaPlayer) ObjectPool.getInstance().getObject("MediaPlayer");
+        notificationManager.notify(0, notification);
+    }
+    private void updataNotification_btn(int type) {
+        remoteViews = notification.contentView;
+        switch (type) {
+            case 0:
+                Resources resources = getResources();
+                Bitmap bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_music_play);
+                remoteViews.setImageViewBitmap(R.id.music_notification_play_play, bitmap);
+                break;
+            case 1:
+                remoteViews.setImageViewResource(R.id.music_notification_play_play, R.drawable.icon_music_pause);
+                break;
         }
         notificationManager.notify(0, notification);
     }
-
-    public void music_play(String uri) {
-        /*更新当前播放uri*/
-        ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_musicUri_String, uri);
-
-        uiHandler = (Handler) ObjectPool.getInstance().getObject("uiHandler");
-        Log.d(TAG, "开始播放");
-        current = 0;
-        ObjectPool.getInstance().creatObject("MediaPlayer", player);
-        try {
-            player.reset();
-            player.setDataSource(uri);//设置文件路径
-            player.prepare();//准备
-            player.start();
-            if (uiHandler != null) {
-                song_time = player.getDuration() / 100;
-                timer = new Timer();
-                timer.schedule(new SetprogressBarThread(), 1000, song_time);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void playingMusic() {
+        if (player != null) {
+            seekBar = (SeekBar) ObjectPool.getInstance().getObject(MusicPlayerActivity.SeekBar_String);
+            if (timer!=null)
+            timer.cancel();
+            timer = new Timer();
+            seekBar.setMax(player.getDuration());
+                        /*定时器刷新进度条*/
+            mTimerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    seekBar.setProgress(player.getCurrentPosition());
+                }
+            };
+            timer.schedule(mTimerTask, 0, 10);
         }
-           /*更新Notification*/
-        updateNotification();
+    }
+
+    public void music_play(String uri, final MusicControl control) {
+        int index = Utils.getSingInstance().getMusicPostion(uri);
+        seekBar = (SeekBar) ObjectPool.getInstance().getObject(MusicPlayerActivity.SeekBar_String);
+        Log.d(TAG, "music_play: --------------------------------->");
+        if (control == MusicControl.music_play) {
+            Log.d(TAG, "music_play: 正在播放...............");
+            ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_Mp3Info_String, list.get(index));
+            updataUI(MusicPlayerActivity.ACTION_FLUSH_PROGRESSBAR);
+            updataNotification_btn(1);
+            updateNotification();
+            try {
+                if (timer != null)
+                    timer.cancel();
+                player.reset();
+                player.setDataSource(list.get(index).getUrl());
+                player.prepareAsync();//异步装载媒体资源
+                /*当装载流媒体完毕的时候回调*/
+                player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mediaPlayer) {
+                        timer = new Timer();
+                        seekBar.setMax(player.getDuration());
+                        /*定时器刷新进度条*/
+                        mTimerTask = new TimerTask() {
+                            @Override
+                            public void run() {
+                                seekBar.setProgress(player.getCurrentPosition());
+                            }
+                        };
+                        timer.schedule(mTimerTask, 0, 10);
+                        player.start();
+                    }
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "music_play: 读取音乐文件流错误");
+                Context context = (Context) ObjectPool.getInstance().getObject(MusicPlayerActivity.MusicPlayerContext);
+                Toast.makeText(context, "文件读取错误或者不支持，已从列表删除", Toast.LENGTH_SHORT).show();
+                music_next();
+                removeErrorMusic(list.get(index));
+            }
+        } else {
+            try {
+                player.prepare();
+                Log.d(TAG, "music_play: 继续音乐");
+                player.seekTo(currentPosition);
+                player.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void removeErrorMusic(Mp3Info info) {
+        list.remove(info);
+        Utils.getSingInstance().saveMusicList(list, getApplicationContext());
     }
 
     private void music_pause() {
         Log.d(TAG, "暂停音乐");
+        updataNotification_btn(0);
+        updataUI(MusicPlayerActivity.ACTION_BTNUPDATE_PAUSE);
         if (player != null) {
+            flag = true;
+            currentPosition = player.getCurrentPosition();
             player.stop();
         }
-        updataUI(MusicPlayerActivity.ACTION_BTNUPDATE_PAUSE);
         updateNotification();
     }
 
     private void music_next() {
-        int index = Utils.getSingInstance().getMusicPostion(now_musicUri) + 1;
+        now_Info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
+        int index = Utils.getSingInstance().getMusicPostion(now_Info.getUrl()) + 1;
         list = (List<Mp3Info>) ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);
         if (index == list.size())
-            index = 1;
-        Log.d(TAG, "music_next: 即将播放 " + index);
+            index = 0;
         if (list != null) {
-            ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_Mp3Info_String, list.get(index));
-            updataUI(MusicPlayerActivity.ACTION_FLUSH_PROGRESSBAR);
-            music_play(list.get(index).getUrl());
+            Log.d(TAG, "music_next: " + index);
+            flag = false;
+            music_play(list.get(index).getUrl(), MusicControl.music_play);
         }
+        Log.d(TAG, "music_next: " + index);
     }
 
     private void music_previous() {
-        int index = Utils.getSingInstance().getMusicPostion(now_musicUri) - 1;
+        now_Info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
+        int index = Utils.getSingInstance().getMusicPostion(now_Info.getUrl()) - 1;
         list = (List<Mp3Info>) ObjectPool.getInstance().getObject(LocalMusicListActivity.ListMusicInfo_String);
         if (index == -1)
             index = list.size() - 1;
         Log.d(TAG, "music_next: 即将播放 " + list.get(index).getName());
         if (list != null) {
-            ObjectPool.getInstance().creatObject(MusicPlayerActivity.NOW_Mp3Info_String, list.get(index));
-            updataUI(MusicPlayerActivity.ACTION_FLUSH_PROGRESSBAR);
-            music_play(list.get(index).getUrl());
+            flag = false;
+            music_play(list.get(index).getUrl(), MusicControl.music_play);
         }
     }
 
     private void music_continue() {
-        Log.d(TAG, "继续音乐");
-        try {
-            player.prepare();
-            player.start();//继续音乐
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        updataNotification_btn(1);
         updataUI(MusicPlayerActivity.ACTION_BTUPNDATA_PLAY);
-        updateNotification();
+        Log.d(TAG, "继续音乐");
+        if (player != null) {
+            Log.d(TAG, "music_continue: .........................?");
+            flag = true;
+            music_play(now_Info.getUrl(), MusicControl.music_continue);
+        }
     }
 
     private void updataUI(String action) {
@@ -242,25 +307,13 @@ public class MusicService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        player = null;
-        timer = null;
-    }
-
-    class SetprogressBarThread extends TimerTask {
-        @Override
-        public void run() {
-            if (player != null) {
-                if (player.isPlaying()) {
-                    Message message = new Message();
-                    message.what = ++current;
-                    if (current > 100) {
-                        timer.cancel();
-                    }
-                    uiHandler.sendMessage(message);
-                }
-            }
+        if (player != null && player.isPlaying()) {
+            player.stop();
+            player.release();
+            player = null;
         }
+        super.onDestroy();
+
     }
 
     private class ServiceConnectionReceiver extends BroadcastReceiver {
@@ -286,20 +339,24 @@ public class MusicService extends Service {
                 }
             } else {
                 String musicControl = intent.getStringExtra(MusicPlayerActivity.RECEIOVERACTION);
-                now_musicUri = (String) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_musicUri_String);
+                now_Info = (Mp3Info) ObjectPool.getInstance().getObject(MusicPlayerActivity.NOW_Mp3Info_String);
                 Log.d(TAG, musicControl + " ");  //UI操作
-                if (musicControl.equals("play"))
-                    music_play(now_musicUri);
-                else if (musicControl.equals("pause"))
+                if (musicControl.equals("play")) {
+                    Log.d(TAG, "onReceive: play");
+                    music_play(now_Info.getUrl(), MusicControl.music_play);
+                } else if (musicControl.equals("pause"))
                     music_pause();
                 else if (musicControl.equals("next"))
                     music_next();
                 else if (musicControl.equals("previous"))
                     music_previous();
-                else if (musicControl.equals("continue"))
+                else if (musicControl.equals("continue")) {
+                    updataUI(MusicPlayerActivity.ACTION_BTUPNDATA_PLAY);
                     music_continue();
+                }
+                else if(musicControl.equals("playingMusic"))
+                    playingMusic();
             }
         }
     }
-
 }

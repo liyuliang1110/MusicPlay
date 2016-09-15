@@ -5,5 +5,5 @@ package com.example.blue.musicplay.Service;
  */
 
 public interface ControlServic {
-    public void invokeServiceMethod(String methodName);
+    abstract  class ServiceConnectionReceiver{};
 }
