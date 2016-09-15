@@ -68,13 +68,13 @@ public class MainMenuAdapter extends BaseAdapter {
                 open_list.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if ((count & 1) == 0) {
-                            Animation animation = AnimationUtils.loadAnimation(context, R.anim.open);
+                        if ((count & 1) != 0) {
+                            Animation animation = AnimationUtils.loadAnimation(context, R.anim.close);
                             animation.setFillAfter(true);
                             open_list.startAnimation(animation);
                             recommend.setVisibility(View.INVISIBLE);
                         } else {
-                            Animation animation = AnimationUtils.loadAnimation(context, R.anim.close);
+                            Animation animation = AnimationUtils.loadAnimation(context, R.anim.open);
                             animation.setFillAfter(true);
                             open_list.startAnimation(animation);
                             recommend.setVisibility(View.VISIBLE);

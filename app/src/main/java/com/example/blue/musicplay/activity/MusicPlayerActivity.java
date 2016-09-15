@@ -50,7 +50,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
     public static final String MusicPlayerContext = "MusicPlayContext";
     public static final String SeekBar_String = "SeekBar";
     @ViewInject(R.id.music_player_singImage)
-    private ImageView music_player_singImage;
+    private CircularMusicProgressBar music_player_singImage;
     @ViewInject(R.id.music_play_musicName)
     private TextView music_play_musicName;
     @ViewInject(R.id.music_play_songName)
@@ -149,6 +149,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
         LinearInterpolator lin = new LinearInterpolator();//匀速效果
         rotation.setInterpolator(lin);
         music_player_singImage.startAnimation(rotation);
+        music_player_singImage.setValue(100);
     }
     @OnClick({R.id.music_play_play, R.id.music_play_next, R.id.music_play_previous})
     private void musicPlayerControl(View view) {

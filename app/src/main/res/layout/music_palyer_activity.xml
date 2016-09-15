@@ -27,17 +27,17 @@
         android:textColor="@android:color/primary_text_dark"
         android:textSize="16sp" />
 
-    <com.example.blue.musicplay.engin.XCRoundRectImageView
+    <com.example.blue.musicplay.activity.CircularMusicProgressBar
         android:id="@+id/music_player_singImage"
-        android:layout_width="288dp"
-        android:layout_height="289dp"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
         android:layout_gravity="center"
         android:layout_marginTop="30dp"
         android:src="@drawable/icon_default_singer"
         app:border_color="#00796B"
         app:border_width="2dp"
-        app:centercircle_diammterer=".97"
-        app:progress_color="#80CBC4"
+        app:centercircle_diammterer=".87"
+        app:progress_color="#FF5722"
         app:progress_startAngle="40" />
 
 
