@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -20,6 +21,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -27,6 +29,7 @@ import com.example.blue.musicplay.R;
 import com.example.blue.musicplay.Service.MusicService;
 import com.example.blue.musicplay.basic.AcitivtyList;
 import com.example.blue.musicplay.basic.Mp3Info;
+import com.example.blue.musicplay.basic.Utils;
 import com.example.blue.musicplay.pool.ObjectPool;
 import com.lidroid.xutils.ViewUtils;
 import com.lidroid.xutils.view.annotation.ViewInject;
@@ -49,6 +52,8 @@ public class MusicPlayerActivity extends AppCompatActivity {
     public static final String ACTION_BTUPNDATA_PLAY = "flush_btn_play";
     public static final String MusicPlayerContext = "MusicPlayContext";
     public static final String SeekBar_String = "SeekBar";
+    @ViewInject(R.id.music_player_layout)
+    private LinearLayout linearLayout ;
     @ViewInject(R.id.music_player_singImage)
     private CircularMusicProgressBar music_player_singImage;
     @ViewInject(R.id.music_play_musicName)
@@ -140,6 +145,7 @@ public class MusicPlayerActivity extends AppCompatActivity {
         if (Now_Mp3Info.getImagePath() != null) {
             Bitmap bm = BitmapFactory.decodeFile(Now_Mp3Info.getImagePath());
             music_player_singImage.setImageBitmap(bm);
+            linearLayout.setBackground(new BitmapDrawable(bm));
         }else {
             Resources resources =getResources();
             Bitmap bitmap = BitmapFactory.decodeResource(resources,R.drawable.icon_default_singer);

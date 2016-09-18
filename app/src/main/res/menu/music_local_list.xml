@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+        <item
+            android:id="@+id/scan_local_music"
+            android:title="扫描" />
+        <item
+            android:id="@+id/scan_music_image"
+            android:title="匹配封面与歌词" />
+
+</menu>

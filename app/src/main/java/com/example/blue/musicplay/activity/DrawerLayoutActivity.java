@@ -1,48 +1,52 @@
 package com.example.blue.musicplay.activity;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.media.MediaPlayer;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.media.Image;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.blue.musicplay.R;
-import com.example.blue.musicplay.Service.ControlServic;
-import com.example.blue.musicplay.Service.MusicService;
 import com.example.blue.musicplay.adapter.MainMenuAdapter;
+import com.example.blue.musicplay.adapter.MainViewPagerAdapter;
 import com.example.blue.musicplay.basic.AcitivtyList;
-import com.example.blue.musicplay.basic.Mp3Info;
-import com.example.blue.musicplay.basic.Utils;
-import com.example.blue.musicplay.engin.MusicScan;
+import com.example.blue.musicplay.basic.StatusBarCompat;
 import com.example.blue.musicplay.pool.ObjectPool;
 import com.lidroid.xutils.view.annotation.ViewInject;
-import com.lidroid.xutils.view.annotation.event.OnClick;
 
-import org.apache.commons.codec.binary.Base64;
+import org.w3c.dom.Text;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,24 +57,20 @@ import java.util.List;
 public class DrawerLayoutActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private static final String TAG = "DrawerLayoutActivity --->";
     public static final String THIS_CONTEXT_STRING = "DrawerLaoutActivity_Context";
-    @ViewInject(R.id.tuijian_listview)
-    private ListView recommend;
-    @ViewInject(R.id.main_menu_list)
-    private ListView main_menu_list ;
-//    @ViewInject(R.id.open_list)
-//    private ImageView image_open;
-//    @ViewInject(R.id.local_music)
-//    private RelativeLayout local_music;
     @ViewInject(R.id.nav_view)
     private NavigationView navigationView;
     @ViewInject(R.id.drawer_layout)
     private DrawerLayout mDrawerLayout;
     @ViewInject(R.id.toolbar)
     private Toolbar toolbar;
-    /*调用Service里面的方法*/
-    private ControlServic controlServic;
-    private List<Mp3Info> listMusic = null;
-    private int count = 0;
+    @ViewInject(R.id.vPager)
+    private ViewPager main_view_pager;
+    @ViewInject(R.id.menu_local_music)
+    private ImageView menu_local_music;
+    @ViewInject(R.id.menu_online_music)
+    private ImageView menu_online_music;
+    private View main_layout, internet_music_layout;
+    private List<View> list_viewPager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,42 +78,48 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         setContentView(R.layout.activity_main);
         com.lidroid.xutils.ViewUtils.inject(this);
         init();
+        initViewPager();
+        initMenuImage();
     }
 
     public void init() {
+
         setSupportActionBar(toolbar);
+        StatusBarCompat.compat(this, getResources().getColor(R.color.status_bar_color));
         init_navigation();
         navigationViewOnclick();
         AcitivtyList.getSingInstance().getList().add(this);
-        recommend.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1, getData()));
-        ObjectPool.getInstance().creatObject(THIS_CONTEXT_STRING,this); //存储Context
-        MainMenuAdapter adapter = new MainMenuAdapter(this,recommend);
-        main_menu_list.setAdapter(adapter);
-        main_menu_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0)
-                    startActivity(new Intent(DrawerLayoutActivity.this, LocalMusicListActivity.class));
-
-            }
-        });
-        loadMusicInfo();
     }
-    private void loadMusicInfo() {
-        SharedPreferences preferences = getSharedPreferences("data",Context.MODE_PRIVATE);
-        String musicList_string = preferences.getString("music_list",null);
-        if (musicList_string==null||musicList_string=="") {
-            listMusic = MusicScan.getMusicData(getApplicationContext()); //获取音乐列表
-            Utils.getSingInstance().saveMusicList(listMusic,this);
-            Log.d(TAG, "loadMusicInfo: 储存对象成功");
-            ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String,listMusic);
-        }else {
-            listMusic = Utils.getSingInstance().getMusicList(musicList_string);
-            if (listMusic!=null) {
-                ObjectPool.getInstance().creatObject(LocalMusicListActivity.ListMusicInfo_String, listMusic);
-            }else {
-                Toast.makeText(this,"读取音乐错误，请确认你的手机中是否有音乐",Toast.LENGTH_SHORT).show();
-            }
+
+    private void initViewPager() {
+        LayoutInflater inflater = getLayoutInflater().from(this);
+        main_layout = inflater.inflate(R.layout.content_main, null);
+        internet_music_layout = inflater.inflate(R.layout.internet_music_layout, null);
+        list_viewPager = new ArrayList<>();
+        list_viewPager.add(internet_music_layout);
+        list_viewPager.add(main_layout);
+        MainViewPagerAdapter pagerAdapter = new MainViewPagerAdapter(list_viewPager, this);
+        main_view_pager.setAdapter(pagerAdapter);
+        main_view_pager.setCurrentItem(1);
+        menu_local_music.setImageResource(R.drawable.main_menu_chenged);
+        main_view_pager.setOnPageChangeListener(new MyOnPageChangeListener());
+    }
+
+    private void initMenuImage() {
+        menu_online_music.setOnClickListener(new MyViewPagerListener(0));
+        menu_local_music.setOnClickListener(new MyViewPagerListener(1));
+    }
+
+    private class MyViewPagerListener implements View.OnClickListener {
+        private int index = 0;
+
+        public MyViewPagerListener(int i) {
+            index = i;
+        }
+
+        @Override
+        public void onClick(View view) {
+            main_view_pager.setCurrentItem(index);
         }
     }
 
@@ -153,18 +159,6 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         navigationView.setNavigationItemSelectedListener(DrawerLayoutActivity.this);
     }
 
-    private List<String> getData() {
-        List<String> data = new ArrayList<String>();
-        data.add("测试数据1");
-        data.add("测试数据2");
-        data.add("测试数据3");
-        data.add("测试数据4");
-        data.add("测试数据5");
-        data.add("测试数据6");
-        data.add("测试数据7");
-        return data;
-    }
-
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
@@ -195,27 +189,32 @@ public class DrawerLayoutActivity extends AppCompatActivity implements Navigatio
         return false;
     }
 
-    /*
-     @param mContext
-    * @param serviceName
-    *            是包名+服务的类名（例如：net.loonggg.testbackstage.TestService）
-    * @return true代表正在运行，false代表服务没有正在运行
-    */
-    public boolean isServiceWork(Context mContext, String serviceName) {
-        boolean isWork = false;
-        ActivityManager myAM = (ActivityManager) mContext
-                .getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningServiceInfo> myList = myAM.getRunningServices(40);
-        if (myList.size() <= 0) {
-            return false;
+    public class MyOnPageChangeListener implements ViewPager.OnPageChangeListener {
+
+        public void onPageScrollStateChanged(int arg0) {
+
+
         }
-        for (int i = 0; i < myList.size(); i++) {
-            String mName = myList.get(i).service.getClassName().toString();
-            if (mName.equals(serviceName)) {
-                isWork = true;
-                break;
+
+        public void onPageScrolled(int arg0, float arg1, int arg2) {
+
+
+        }
+
+        public void onPageSelected(int arg0) {
+            if (main_view_pager.getCurrentItem() == 1) {
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.main_menu_chenged);
+                menu_local_music.setImageBitmap(bitmap);
+                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.menu_online_music);
+                menu_online_music.setImageBitmap(bitmap);
+            } else if (main_view_pager.getCurrentItem() == 0) {
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.menu_online_music_changed);
+                menu_online_music.setImageBitmap(bitmap);
+                bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.main_menu);
+                menu_local_music.setImageBitmap(bitmap);
             }
+
         }
-        return isWork;
+
     }
 }

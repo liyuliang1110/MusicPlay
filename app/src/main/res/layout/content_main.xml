@@ -4,15 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.blue.musicplay.MainActivity"
-    tools:showIn="@layout/app_bar_main">
+>
 
     <RelativeLayout
         android:id="@+id/center__layout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        tools:ignore="UselessParent">
 
         <include
             android:id="@+id/center_list_center"
@@ -21,7 +20,9 @@
         <include
             android:id="@+id/down_bottom"
             layout="@layout/bottom_music_layout"
-        />
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
 
     </RelativeLayout>
 

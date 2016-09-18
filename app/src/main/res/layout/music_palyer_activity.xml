@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/music_player_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/music_player_background"
@@ -35,10 +36,10 @@
         android:layout_marginTop="30dp"
         android:src="@drawable/icon_default_singer"
         app:border_color="#00796B"
-        app:border_width="2dp"
-        app:centercircle_diammterer=".87"
+        app:border_width="5dp"
+        app:centercircle_diammterer=".90"
         app:progress_color="#FF5722"
-        app:progress_startAngle="40" />
+        app:progress_startAngle="30" />
 
 
 
